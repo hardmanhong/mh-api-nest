@@ -31,7 +31,8 @@ export class SellService {
         throw new CommonException('卖出数量超过买入数量');
       const profit = sell.price - buy.price;
       buy.inventory -= sell.quantity;
-      buy.totalProfit += profit * sell.quantity;
+      buy.totalProfit =
+        Number(buy.totalProfit) + Number(profit * sell.quantity);
       sell.profit = profit;
       await queryRunner.manager.save(buy);
       result = await queryRunner.manager.save(this.sellRepository.create(sell));
@@ -61,12 +62,13 @@ export class SellService {
       const lastSell = await this.findOne(sell.id);
       if (buy.inventory + lastSell.quantity < sell.quantity)
         throw new CommonException('卖出数量超过买入数量');
-      const profit = sell.price - buy.price;
+      const profit = Number(sell.price) - Number(buy.price);
 
+      buy.hasSold = 1;
       buy.inventory = buy.inventory + lastSell.quantity - sell.quantity;
       buy.totalProfit =
-        buy.totalProfit -
-        lastSell.profit * lastSell.quantity +
+        Number(buy.totalProfit) -
+        Number(lastSell.profit) * lastSell.quantity +
         profit * sell.quantity;
       await queryRunner.manager.save(buy);
 

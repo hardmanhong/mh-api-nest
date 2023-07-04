@@ -6,6 +6,7 @@ import {
   JoinColumn,
   CreateDateColumn,
   OneToMany,
+  UpdateDateColumn,
 } from 'typeorm';
 import { Exclude, Transform } from 'class-transformer';
 import { Goods } from '../goods/goods.entity';
@@ -66,6 +67,10 @@ export class Buy {
   @Column({ type: 'timestamp', name: 'created_at' })
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
+
+  @Column({ type: 'timestamp', name: 'updated_at' })
+  @UpdateDateColumn({ name: 'updated_at' })
+  updatedAt: Date;
 
   // 定义一个 goods 属性，表示 buy 和 goods 的多对一关系
   @ManyToOne(() => Goods, (goods) => goods.buys)

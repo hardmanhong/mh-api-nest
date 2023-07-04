@@ -49,11 +49,18 @@ export class BuyService {
       .reduce((a, b) => a + b, 0)
       .toFixed();
 
+    const totalInventory = list
+      .filter((item) => item.inventory > 0)
+      .map((item) => item.price * item.inventory)
+      .reduce((a, b) => a + b, 0)
+      .toFixed();
+
     return {
       list,
       count,
       totalAmount,
       totalProfit,
+      totalInventory,
     };
   }
   async findOne(id: number) {
