@@ -42,10 +42,12 @@ export class BuyService {
     });
     const totalAmount = list
       .map((item) => item.price * item.quantity)
-      .reduce((a, b) => a + b, 0);
+      .reduce((a, b) => a + b, 0)
+      .toFixed();
     const totalProfit = list
       .map((item) => Number(item.totalProfit))
-      .reduce((a, b) => a + b, 0);
+      .reduce((a, b) => a + b, 0)
+      .toFixed();
 
     return {
       list,
