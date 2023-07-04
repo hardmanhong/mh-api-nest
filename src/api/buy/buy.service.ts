@@ -41,10 +41,10 @@ export class BuyService {
       // },
     });
     const totalAmount = list
-      .map((item) => item.totalAmount)
+      .map((item) => item.price * item.quantity)
       .reduce((a, b) => a + b, 0);
     const totalProfit = list
-      .map((item) => item.totalProfit)
+      .map((item) => Number(item.totalProfit))
       .reduce((a, b) => a + b, 0);
 
     return {
