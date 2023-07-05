@@ -5,6 +5,7 @@ import { TimeDimension } from './type';
 import { Request } from 'express';
 import dayjs from 'dayjs';
 import { Sell } from '../sell/sell.entity';
+import { Goods } from '../goods/goods.entity';
 
 @Injectable()
 export class StatisticsService {
@@ -12,16 +13,33 @@ export class StatisticsService {
     private dataSource: DataSource,
     @Inject('REQUEST') private readonly req: Request,
   ) {}
-  async getTotalProfit() {
-    return (
+  async getStatistics() {
+    const totalProfit =
       (
         await this.dataSource
           .getRepository(Buy)
           .createQueryBuilder('buy')
           .select('SUM(buy.totalProfit)', 'totalProfit')
+          .where('buy.userId = :userId and buy.inventory > 0', {
+            userId: this.req.app.get('userId'),
+          })
           .getRawOne()
-      ).totalProfit || 0
-    );
+      ).totalProfit || 0;
+    const totalInventory =
+      (
+        await this.dataSource
+          .getRepository(Buy)
+          .createQueryBuilder('buy')
+          .select('SUM(buy.price * buy.inventory)', 'totalInventory')
+          .where('buy.userId = :userId and buy.inventory > 0', {
+            userId: this.req.app.get('userId'),
+          })
+          .getRawOne()
+      ).totalInventory || 0;
+    return {
+      totalInventory,
+      totalProfit,
+    };
   }
   private getDateRange(
     type: TimeDimension,
@@ -62,13 +80,12 @@ export class StatisticsService {
         return [list, end.subtract(1, 'month'), end];
     }
   }
-  private async getStatisticsByDay() {
-    const [dateList, startDate, endDate] = this.getDateRange('day');
-    const userId = this.req.app.get('userId');
-    const buyRows = await this.dataSource
+
+  private getBuyRows(dateFormat: string, { userId, startDate, endDate }) {
+    return this.dataSource
       .getRepository(Buy)
       .createQueryBuilder('buy')
-      .select("DATE_FORMAT(buy.createdAt, '%Y-%m-%d')", 'date')
+      .select(dateFormat, 'date')
       .addSelect('SUM(buy.price * buy.quantity)', 'value')
       .where('buy.userId = :userId', {
         userId,
@@ -80,11 +97,12 @@ export class StatisticsService {
       .groupBy('date')
       .orderBy('date')
       .getRawMany();
-
-    const sellRows = await this.dataSource
+  }
+  private getSellRows(dateFormat: string, { userId, startDate, endDate }) {
+    return this.dataSource
       .getRepository(Sell)
       .createQueryBuilder('sell')
-      .select("DATE_FORMAT(sell.createdAt, '%Y-%m-%d')", 'date')
+      .select(dateFormat, 'date')
       .addSelect('SUM(sell.price * sell.quantity)', 'value')
       .leftJoin('sell.buy', 'buy')
       .where('buy.userId = :userId', {
@@ -97,13 +115,16 @@ export class StatisticsService {
       .groupBy('date')
       .orderBy('date')
       .getRawMany();
-
-    const profitRows = await this.dataSource
+  }
+  private getProfitRows(dateFormat: string, { userId, startDate, endDate }) {
+    return this.dataSource
       .getRepository(Sell)
       .createQueryBuilder('sell')
-      .select("DATE_FORMAT(sell.createdAt, '%Y-%m-%d')", 'date')
-      .addSelect('SUM(sell.profit * sell.quantity)', 'value')
       .leftJoin('sell.buy', 'buy')
+      .leftJoin('sell.goods', 'goods')
+      .select(dateFormat, 'date')
+      .addSelect('goods.name', 'name')
+      .addSelect('SUM(sell.profit * sell.quantity)', 'value')
       .where('buy.userId = :userId', {
         userId,
       })
@@ -112,284 +133,97 @@ export class StatisticsService {
         end: endDate.toDate(),
       })
       .groupBy('date')
+      .addGroupBy('name')
       .orderBy('date')
       .getRawMany();
+  }
+  private getDateFormat(type: TimeDimension, table: 'buy' | 'sell') {
+    const map = {
+      day: `DATE_FORMAT(${table}.createdAt, "%Y-%m-%d")`,
+      week: `DATE_FORMAT(DATE_SUB(${table}.createdAt, INTERVAL WEEKDAY(${table}.createdAt) DAY), "%Y-%m-%d")`,
+      month: `DATE_FORMAT(${table}.createdAt, "%Y-%m")`,
+      year: `DATE_FORMAT(${table}.createdAt, "%Y")`,
+    };
+    return map[type] || map.day;
+  }
+
+  async getBusiness(type: TimeDimension) {
+    const [dateList, startDate, endDate] = this.getDateRange(type);
+    const dateFormatBuy = this.getDateFormat(type, 'buy');
+    const dateFormatSell = this.getDateFormat(type, 'sell');
+    const userId = this.req.app.get('userId');
+    const buyRows = await this.getBuyRows(dateFormatBuy, {
+      userId,
+      startDate,
+      endDate,
+    });
+    const sellRows = await this.getSellRows(dateFormatSell, {
+      userId,
+      startDate,
+      endDate,
+    });
+
+    const profitRows = await this.getProfitRows(dateFormatSell, {
+      userId,
+      startDate,
+      endDate,
+    });
     const buyList = [];
     const sellList = [];
     const profitList = [];
     dateList.forEach((date) => {
       const buy = buyRows.find((_) => _.date === date);
-      const buyItem = buy
-        ? { ...buy, name: '买入' }
-        : { date, value: 0, name: '买入' };
-      buyList.push(buyItem);
+      buyList.push({
+        date,
+        value: buy ? parseFloat(buy.value) : 0,
+        name: '买入',
+      });
       const sell = sellRows.find((_) => _.date === date);
-      const sellItem = sell
-        ? { ...sell, name: '卖出' }
-        : { date, value: 0, name: '卖出' };
-      sellList.push(sellItem);
+      sellList.push({
+        date,
+        value: sell ? parseFloat(sell.value) : 0,
+        name: '卖出',
+      });
 
-      const profit = profitRows.find((_) => _.date === date);
-      const profitItem = profit
-        ? { ...profit, name: '利润' }
-        : { date, value: 0, name: '利润' };
-
-      profitList.push(profitItem);
+      const profits = profitRows.filter((_) => _.date === date);
+      if (profits.length) {
+        profits.map((item) => ({ ...item, value: parseFloat(item.value) }));
+        profits.forEach((profit) => {
+          profitList.push({
+            ...profit,
+            value: parseFloat(profit.value),
+          });
+        });
+      } else {
+        profitList.push({ date, value: 0, name: '利润' });
+      }
     });
     return { buyList, sellList, profitList };
   }
-  private async getStatisticsByWeek() {
-    const [dateList, startDate, endDate] = this.getDateRange('week');
-    const userId = this.req.app.get('userId');
-    const buyRows = await this.dataSource
+
+  async getInventory() {
+    const list = await this.dataSource
       .getRepository(Buy)
       .createQueryBuilder('buy')
-      .select(
-        "DATE_FORMAT(DATE_SUB(buy.createdAt, INTERVAL WEEKDAY(buy.createdAt) DAY), '%Y-%m-%d')",
-        'date',
-      )
-      .addSelect('SUM(buy.price * buy.quantity)', 'value')
-      .where('buy.userId = :userId', {
-        userId,
+      .select([
+        'goods.id AS goodsId',
+        'goods.name AS goodsName',
+        'SUM(buy.price * buy.inventory) AS totalInventory',
+      ])
+      .innerJoin('buy.goods', 'goods')
+      .where('buy.userId = :userId and buy.inventory > 0', {
+        userId: this.req.app.get('userId'),
       })
-      .andWhere('buy.createdAt BETWEEN :start AND :end', {
-        start: startDate.toDate(),
-        end: endDate.toDate(),
-      })
-      .groupBy('date')
-      .orderBy('date')
+      .groupBy('buy.goodsId')
+      .orderBy('totalInventory', 'DESC')
       .getRawMany();
-
-    const sellRows = await this.dataSource
-      .getRepository(Sell)
-      .createQueryBuilder('sell')
-      .select(
-        "DATE_FORMAT(DATE_SUB(sell.createdAt, INTERVAL WEEKDAY(sell.createdAt) DAY), '%Y-%m-%d')",
-        'date',
-      )
-      .addSelect('SUM(sell.price * sell.quantity)', 'value')
-      .leftJoin('sell.buy', 'buy')
-      .where('buy.userId = :userId', {
-        userId,
-      })
-      .andWhere('sell.createdAt BETWEEN :start AND :end', {
-        start: startDate.toDate(),
-        end: endDate.toDate(),
-      })
-      .groupBy('date')
-      .orderBy('date')
-      .getRawMany();
-
-    const profitRows = await this.dataSource
-      .getRepository(Sell)
-      .createQueryBuilder('sell')
-      .select(
-        "DATE_FORMAT(DATE_SUB(sell.createdAt, INTERVAL WEEKDAY(sell.createdAt) DAY), '%Y-%m-%d')",
-        'date',
-      )
-      .addSelect('SUM(sell.profit * sell.quantity)', 'value')
-      .leftJoin('sell.buy', 'buy')
-      .where('buy.userId = :userId', {
-        userId,
-      })
-      .andWhere('sell.createdAt BETWEEN :start AND :end', {
-        start: startDate.toDate(),
-        end: endDate.toDate(),
-      })
-      .groupBy('date')
-      .orderBy('date')
-      .getRawMany();
-    const buyList = [];
-    const sellList = [];
-    const profitList = [];
-    dateList.forEach((date) => {
-      const buy = buyRows.find((_) => _.date === date);
-      const buyItem = buy
-        ? { ...buy, name: '买入' }
-        : { date, value: 0, name: '买入' };
-      buyList.push(buyItem);
-
-      const sell = sellRows.find((_) => _.date === date);
-      const sellItem = sell
-        ? { ...sell, name: '卖出' }
-        : { date, value: 0, name: '卖出' };
-      sellList.push(sellItem);
-
-      const profit = profitRows.find((_) => _.date === date);
-      const profitItem = profit
-        ? { ...profit, name: '利润' }
-        : { date, value: 0, name: '利润' };
-
-      profitList.push(profitItem);
+    const result = list.map((item) => {
+      return {
+        goodsId: item.goodsId,
+        goodsName: item.goodsName,
+        totalInventory: parseFloat(item.totalInventory),
+      };
     });
-    return { buyList, sellList, profitList };
-  }
-  private async getStatisticsByMonth() {
-    const [dateList, startDate, endDate] = this.getDateRange('month');
-    const userId = this.req.app.get('userId');
-    const buyRows = await this.dataSource
-      .getRepository(Buy)
-      .createQueryBuilder('buy')
-      .select("DATE_FORMAT(buy.createdAt, '%Y-%m')", 'date')
-      .addSelect('SUM(buy.price * buy.quantity)', 'value')
-      .where('buy.userId = :userId', {
-        userId,
-      })
-      .andWhere('buy.createdAt BETWEEN :start AND :end', {
-        start: startDate.toDate(),
-        end: endDate.toDate(),
-      })
-      .groupBy('date')
-      .orderBy('date')
-      .getRawMany();
-
-    const sellRows = await this.dataSource
-      .getRepository(Sell)
-      .createQueryBuilder('sell')
-      .select("DATE_FORMAT(buy.createdAt, '%Y-%m')", 'date')
-      .addSelect('SUM(sell.price * sell.quantity)', 'value')
-      .leftJoin('sell.buy', 'buy')
-      .where('buy.userId = :userId', {
-        userId,
-      })
-      .andWhere('sell.createdAt BETWEEN :start AND :end', {
-        start: startDate.toDate(),
-        end: endDate.toDate(),
-      })
-      .groupBy('date')
-      .orderBy('date')
-      .getRawMany();
-
-    const profitRows = await this.dataSource
-      .getRepository(Sell)
-      .createQueryBuilder('sell')
-      .select("DATE_FORMAT(buy.createdAt, '%Y-%m')", 'date')
-      .addSelect('SUM(sell.profit * sell.quantity)', 'value')
-      .leftJoin('sell.buy', 'buy')
-      .where('buy.userId = :userId', {
-        userId,
-      })
-      .andWhere('sell.createdAt BETWEEN :start AND :end', {
-        start: startDate.toDate(),
-        end: endDate.toDate(),
-      })
-      .groupBy('date')
-      .orderBy('date')
-      .getRawMany();
-    const buyList = [];
-    const sellList = [];
-    const profitList = [];
-    dateList.forEach((date) => {
-      const buy = buyRows.find((_) => _.date === date);
-      const buyItem = buy
-        ? { ...buy, name: '买入' }
-        : { date, value: 0, name: '买入' };
-      buyList.push(buyItem);
-
-      const sell = sellRows.find((_) => _.date === date);
-      const sellItem = sell
-        ? { ...sell, name: '卖出' }
-        : { date, value: 0, name: '卖出' };
-      sellList.push(sellItem);
-
-      const profit = profitRows.find((_) => _.date === date);
-      const profitItem = profit
-        ? { ...profit, name: '利润' }
-        : { date, value: 0, name: '利润' };
-
-      profitList.push(profitItem);
-    });
-    return { buyList, sellList, profitList };
-  }
-  private async getStatisticsByYear() {
-    const [dateList, startDate, endDate] = this.getDateRange('year');
-    const userId = this.req.app.get('userId');
-    const buyRows = await this.dataSource
-      .getRepository(Buy)
-      .createQueryBuilder('buy')
-      .select("DATE_FORMAT(buy.createdAt, '%Y')", 'date')
-      .addSelect('SUM(buy.price * buy.quantity)', 'value')
-      .where('buy.userId = :userId', {
-        userId,
-      })
-      .andWhere('buy.createdAt BETWEEN :start AND :end', {
-        start: startDate.toDate(),
-        end: endDate.toDate(),
-      })
-      .groupBy('date')
-      .orderBy('date')
-      .getRawMany();
-
-    const sellRows = await this.dataSource
-      .getRepository(Sell)
-      .createQueryBuilder('sell')
-      .select("DATE_FORMAT(buy.createdAt, '%Y')", 'date')
-      .addSelect('SUM(sell.price * sell.quantity)', 'value')
-      .leftJoin('sell.buy', 'buy')
-      .where('buy.userId = :userId', {
-        userId,
-      })
-      .andWhere('sell.createdAt BETWEEN :start AND :end', {
-        start: startDate.toDate(),
-        end: endDate.toDate(),
-      })
-      .groupBy('date')
-      .orderBy('date')
-      .getRawMany();
-
-    const profitRows = await this.dataSource
-      .getRepository(Sell)
-      .createQueryBuilder('sell')
-      .select("DATE_FORMAT(buy.createdAt, '%Y')", 'date')
-      .addSelect('SUM(sell.profit * sell.quantity)', 'value')
-      .leftJoin('sell.buy', 'buy')
-      .where('buy.userId = :userId', {
-        userId,
-      })
-      .andWhere('sell.createdAt BETWEEN :start AND :end', {
-        start: startDate.toDate(),
-        end: endDate.toDate(),
-      })
-      .groupBy('date')
-      .orderBy('date')
-      .getRawMany();
-    const buyList = [];
-    const sellList = [];
-    const profitList = [];
-    dateList.forEach((date) => {
-      const buy = buyRows.find((_) => _.date === date);
-      const buyItem = buy
-        ? { ...buy, name: '买入' }
-        : { date, value: 0, name: '买入' };
-      buyList.push(buyItem);
-
-      const sell = sellRows.find((_) => _.date === date);
-      const sellItem = sell
-        ? { ...sell, name: '卖出' }
-        : { date, value: 0, name: '卖出' };
-      sellList.push(sellItem);
-
-      const profit = profitRows.find((_) => _.date === date);
-      const profitItem = profit
-        ? { ...profit, name: '利润' }
-        : { date, value: 0, name: '利润' };
-
-      profitList.push(profitItem);
-    });
-    return { buyList, sellList, profitList };
-  }
-  async getStatistics(type: TimeDimension) {
-    switch (type) {
-      case 'day':
-        return this.getStatisticsByDay();
-      case 'week':
-        return this.getStatisticsByWeek();
-      case 'month':
-        return this.getStatisticsByMonth();
-      case 'year':
-        return this.getStatisticsByYear();
-      default:
-        return this.getStatisticsByDay();
-    }
+    return result;
   }
 }

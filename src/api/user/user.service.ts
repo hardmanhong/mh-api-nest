@@ -25,7 +25,7 @@ export class UserService {
     if (!result) throw new CommonException('密码错误');
     const tokenString = generateString(32);
     const expireAt = new Date();
-    expireAt.setDate(expireAt.getDate() + 1);
+    expireAt.setDate(expireAt.getDate() + 30);
     const token = new Token();
     token.userId = find.id;
     token.token = tokenString;

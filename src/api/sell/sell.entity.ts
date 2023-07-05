@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
 import { Buy } from '../buy/buy.entity';
+import { Goods } from '../goods/goods.entity';
 
 @Entity()
 export class Sell {
@@ -45,4 +46,8 @@ export class Sell {
   @ManyToOne(() => Buy, (buy) => buy.sales)
   @JoinColumn({ name: 'buy_id' })
   buy: Buy;
+
+  @ManyToOne(() => Goods, (goods) => goods.sales)
+  @JoinColumn({ name: 'goods_id' })
+  goods: Goods;
 }

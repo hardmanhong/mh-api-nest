@@ -17,7 +17,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     response.json({
       code: HttpStatus.INTERNAL_SERVER_ERROR,
       message: exception.message,
-      detail: exception.message,
+      detail: exception.stack,
     });
     console.error(
       // tslint:disable-line

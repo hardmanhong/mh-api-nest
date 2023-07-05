@@ -6,13 +6,18 @@ import { TimeDimension } from './type';
 export class StatisticsController {
   constructor(private statisticsService: StatisticsService) {}
 
-  @Get('getTotalProfit')
-  getTotalProfit() {
-    return this.statisticsService.getTotalProfit();
+  @Get()
+  getStatistics() {
+    return this.statisticsService.getStatistics();
   }
 
-  @Get()
-  getStatistics(@Query('type') type: TimeDimension = 'day') {
-    return this.statisticsService.getStatistics(type);
+  @Get('business')
+  getBusiness(@Query('type') type: TimeDimension = 'day') {
+    return this.statisticsService.getBusiness(type);
+  }
+
+  @Get('inventory')
+  getInventory() {
+    return this.statisticsService.getInventory();
   }
 }
