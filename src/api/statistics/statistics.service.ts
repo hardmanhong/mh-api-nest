@@ -20,7 +20,7 @@ export class StatisticsService {
           .getRepository(Buy)
           .createQueryBuilder('buy')
           .select('SUM(buy.totalProfit)', 'totalProfit')
-          .where('buy.userId = :userId and buy.inventory > 0', {
+          .where('buy.userId = :userId', {
             userId: this.req.app.get('userId'),
           })
           .getRawOne()
@@ -116,14 +116,15 @@ export class StatisticsService {
       .orderBy('date')
       .getRawMany();
   }
-  private getProfitRows(dateFormat: string, { userId, startDate, endDate }) {
+  private getTotalProfitRows(
+    dateFormat: string,
+    { userId, startDate, endDate },
+  ) {
     return this.dataSource
       .getRepository(Sell)
       .createQueryBuilder('sell')
       .leftJoin('sell.buy', 'buy')
-      .leftJoin('sell.goods', 'goods')
       .select(dateFormat, 'date')
-      .addSelect('goods.name', 'name')
       .addSelect('SUM(sell.profit * sell.quantity)', 'value')
       .where('buy.userId = :userId', {
         userId,
@@ -133,9 +134,32 @@ export class StatisticsService {
         end: endDate.toDate(),
       })
       .groupBy('date')
-      .addGroupBy('name')
       .orderBy('date')
       .getRawMany();
+  }
+  private getProfitRows(dateFormat: string, { userId, startDate, endDate }) {
+    return (
+      this.dataSource
+        .getRepository(Sell)
+        .createQueryBuilder('sell')
+        .leftJoin('sell.buy', 'buy')
+        .leftJoin('sell.goods', 'goods')
+        .select(dateFormat, 'date')
+        .addSelect('goods.name', 'name')
+        .addSelect('SUM(sell.profit * sell.quantity)', 'value')
+        .where('buy.userId = :userId', {
+          userId,
+        })
+        .andWhere('sell.createdAt BETWEEN :start AND :end', {
+          start: startDate.toDate(),
+          end: endDate.toDate(),
+        })
+        .groupBy('date')
+        .addGroupBy('name')
+        // .orderBy('date')
+        .orderBy('value', 'DESC')
+        .getRawMany()
+    );
   }
   private getDateFormat(type: TimeDimension, table: 'buy' | 'sell') {
     const map = {
@@ -163,11 +187,19 @@ export class StatisticsService {
       endDate,
     });
 
-    const profitRows = await this.getProfitRows(dateFormatSell, {
+    const profitRows = (
+      await this.getProfitRows(dateFormatSell, {
+        userId,
+        startDate,
+        endDate,
+      })
+    ).filter((item) => item.value > 0);
+    const totalProfit = await this.getTotalProfitRows(dateFormatSell, {
       userId,
       startDate,
       endDate,
     });
+    console.log('totalProfit', totalProfit);
     const buyList = [];
     const sellList = [];
     const profitList = [];
@@ -187,11 +219,18 @@ export class StatisticsService {
 
       const profits = profitRows.filter((_) => _.date === date);
       if (profits.length) {
+        const total = totalProfit.find((item) => item.date === date);
         profits.map((item) => ({ ...item, value: parseFloat(item.value) }));
         profits.forEach((profit) => {
+          const percantage = (
+            (parseFloat(profit.value) / parseFloat(total.value)) *
+            100
+          ).toFixed(2);
           profitList.push({
             ...profit,
             value: parseFloat(profit.value),
+            total: parseFloat(total.value),
+            percantage: percantage,
           });
         });
       } else {
