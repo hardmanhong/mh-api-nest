@@ -5,41 +5,41 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
-  JoinColumn,
-} from 'typeorm';
-import { Exclude } from 'class-transformer';
-import { Character } from '../character/character.entity';
+  JoinColumn
+} from 'typeorm'
+import { Exclude } from 'class-transformer'
+import { Character } from '../character/character.entity'
 
 @Entity()
 export class Pet {
   @PrimaryGeneratedColumn()
-  id: number;
+  id: number
 
   @Exclude()
   @Column({ name: 'character_id' })
-  characterID: number;
+  characterID: number
 
   @Column()
-  name: string;
+  name: string
 
   @Column()
-  price: string;
+  price: string
 
   @Column()
-  level: string;
+  level: string
 
   @Column()
-  remark: string;
+  remark: string
 
   @ManyToOne(() => Character, (record) => record.pets)
   @JoinColumn({ name: 'character_id' })
-  character: Character;
+  character: Character
 
   @Column({ type: 'timestamp', name: 'created_at' })
   @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
+  createdAt: Date
 
   @Column({ type: 'timestamp', name: 'updated_at' })
   @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date;
+  updatedAt: Date
 }

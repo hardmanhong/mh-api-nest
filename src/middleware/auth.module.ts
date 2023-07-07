@@ -1,10 +1,10 @@
-import { Module } from '@nestjs/common';
-import { AuthMiddleware } from './auth.middleware';
-import { TokenModule } from 'src/api/token/token.module';
+import { Module } from '@nestjs/common'
+import { AuthMiddleware } from './auth.middleware'
+import { TokenModule } from 'src/api/token/token.module'
 
 @Module({
   imports: [TokenModule],
   providers: [AuthMiddleware],
-  exports: [],
+  exports: []
 })
 export class AuthModule {}

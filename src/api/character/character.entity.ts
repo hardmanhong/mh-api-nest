@@ -7,60 +7,60 @@ import {
   ManyToOne,
   JoinColumn,
   OneToMany,
-  OneToOne,
-} from 'typeorm';
-import { Exclude } from 'class-transformer';
-import { Equipment } from '../equipment/equipment.entity';
-import { Pet } from '../pet/pet.entity';
-import { Account } from '../account/account.entity';
+  OneToOne
+} from 'typeorm'
+import { Exclude } from 'class-transformer'
+import { Equipment } from '../equipment/equipment.entity'
+import { Pet } from '../pet/pet.entity'
+import { Account } from '../account/account.entity'
 export class ColumnNumericTransformer {
   to(data: number): number {
-    return data;
+    return data
   }
   from(data: string): number {
-    return parseFloat(data);
+    return parseFloat(data)
   }
 }
 @Entity()
 export class Character {
   @PrimaryGeneratedColumn()
-  id: number;
+  id: number
 
   @Exclude()
   @Column({ name: 'account_id' })
-  accountId: number;
+  accountId: number
 
   @Column()
-  name: string;
+  name: string
 
   // 造型
   @Column()
-  molding: string;
+  molding: string
 
   // 门派
   @Column()
-  sect: string;
+  sect: string
 
   @Column()
-  level: string;
+  level: string
 
   @Column()
-  remark: string;
+  remark: string
 
   @ManyToOne(() => Account, (account) => account.characters)
   @JoinColumn({ name: 'account_id' })
-  account: Account;
+  account: Account
 
   @OneToOne(() => Equipment, (equipment) => equipment.character)
-  equipment: Equipment;
+  equipment: Equipment
 
   @OneToMany(() => Pet, (pet) => pet.character)
-  pets: Pet[];
+  pets: Pet[]
 
   @Column({ type: 'timestamp', name: 'created_at' })
-  createdAt: Date;
+  createdAt: Date
 
   @Column({ type: 'timestamp', name: 'updated_at' })
   @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date;
+  updatedAt: Date
 }

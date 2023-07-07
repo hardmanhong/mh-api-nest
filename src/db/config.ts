@@ -1,4 +1,4 @@
-import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { TypeOrmModuleOptions } from '@nestjs/typeorm'
 
 export const config: TypeOrmModuleOptions = {
   type: 'mysql',
@@ -9,5 +9,5 @@ export const config: TypeOrmModuleOptions = {
   database: 'mh',
   entities: [],
   autoLoadEntities: true,
-  logging: true,
-};
+  logging: true
+}

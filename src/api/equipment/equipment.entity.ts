@@ -6,72 +6,72 @@ import {
   UpdateDateColumn,
   ManyToOne,
   OneToOne,
-  JoinColumn,
-} from 'typeorm';
-import { Exclude } from 'class-transformer';
-import { Character } from '../character/character.entity';
+  JoinColumn
+} from 'typeorm'
+import { Exclude } from 'class-transformer'
+import { Character } from '../character/character.entity'
 
 @Entity()
 export class Equipment {
   @PrimaryGeneratedColumn()
-  id: number;
+  id: number
 
   @Exclude()
   @Column({ name: 'character_id' })
-  characterID: number;
+  characterID: number
 
   // 武器
   @Column()
-  arms: string;
+  arms: string
 
   // 头盔
   @Column()
-  helmet: string;
+  helmet: string
 
   // 项链
   @Column()
-  necklace: string;
+  necklace: string
 
   // 衣服
   @Column()
-  clothes: string;
+  clothes: string
 
   // 腰带
   @Column()
-  belt: string;
+  belt: string
 
   // 鞋子
   @Column()
-  shoe: string;
+  shoe: string
 
   // 戒指
   @Column()
-  ring: string;
+  ring: string
 
   // 手镯
   @Column()
-  bracelet: string;
+  bracelet: string
 
   // 耳饰
   @Column()
-  earring: string;
+  earring: string
 
   // 佩饰
   @Column()
-  trimming: string;
+  trimming: string
 
   @Column()
-  remark: string;
+  remark: string
 
   @OneToOne(() => Character, (record) => record.equipment)
   @JoinColumn({ name: 'character_id' })
-  character: Character;
+  character: Character
 
   @Column({ type: 'timestamp', name: 'created_at' })
   @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
+  createdAt: Date
 
   @Column({ type: 'timestamp', name: 'updated_at' })
   @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date;
+  updatedAt: Date
 }

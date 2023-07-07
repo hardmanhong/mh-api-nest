@@ -1,1 +1,1 @@
-export type TimeDimension = 'day' | 'week' | 'month' | 'year';
+export type TimeDimension = 'day' | 'week' | 'month' | 'year'

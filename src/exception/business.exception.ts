@@ -1,4 +1,4 @@
-import { HttpStatus } from '@nestjs/common';
+import { HttpStatus } from '@nestjs/common'
 /**
  * 业务异常
  */
@@ -6,7 +6,7 @@ export class BusinessException {
   constructor(
     readonly code: number,
     readonly message: string,
-    readonly detail?: string,
+    readonly detail?: string
   ) {}
 }
 /**
@@ -14,7 +14,7 @@ export class BusinessException {
  */
 export class CommonException extends BusinessException {
   constructor(message = '', detail = '') {
-    super(HttpStatus.INTERNAL_SERVER_ERROR, message, detail);
+    super(HttpStatus.INTERNAL_SERVER_ERROR, message, detail)
   }
 }
 /**
@@ -22,7 +22,7 @@ export class CommonException extends BusinessException {
  */
 export class ParamException extends BusinessException {
   constructor(message = '参数错误', detail?: string) {
-    super(HttpStatus.BAD_REQUEST, message, detail);
+    super(HttpStatus.BAD_REQUEST, message, detail)
   }
 }
 /**
@@ -30,6 +30,6 @@ export class ParamException extends BusinessException {
  */
 export class AuthException extends BusinessException {
   constructor(message = '无权访问', detail?: string) {
-    super(HttpStatus.FORBIDDEN, message, detail);
+    super(HttpStatus.FORBIDDEN, message, detail)
   }
 }
