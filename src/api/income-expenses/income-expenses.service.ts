@@ -27,9 +27,20 @@ export class IncomeExpensesService {
         ...(category.length && { category: In(category) })
       }
     })
+    const income = await this.incomeExpensesRepository.sum('amount', [
+      { userId, type: 1 }
+    ])
+    const expenses = await this.incomeExpensesRepository.sum('amount', [
+      { userId, type: 2 }
+    ])
+    const surplus = income - expenses
+
     return {
       list,
-      count
+      count,
+      income,
+      expenses,
+      surplus
     }
   }
   async findOne(id: number) {
