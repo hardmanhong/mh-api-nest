@@ -1,7 +1,12 @@
+import { ValidationPipe } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 import { AppModule } from './app.module'
+import {
+  BusinessExceptionFilter,
+  HttpExceptionFilter,
+  ValidationExceptionFilter
+} from './exception'
 import { ResponseInterceptor } from './interceptors'
-import { BusinessExceptionFilter, HttpExceptionFilter } from './exception'
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -11,7 +16,9 @@ async function bootstrap() {
     }
   })
   app.setGlobalPrefix('v1')
+  app.useGlobalPipes(new ValidationPipe())
   app.useGlobalFilters(new HttpExceptionFilter())
+  app.useGlobalFilters(new ValidationExceptionFilter())
   app.useGlobalFilters(new BusinessExceptionFilter())
   app.useGlobalInterceptors(new ResponseInterceptor())
   await app.listen(9000)
