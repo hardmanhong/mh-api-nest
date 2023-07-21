@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
-import { User } from './user.entity'
-import { generateHashedPassword, generateString } from 'src/util'
 import { CommonException } from 'src/exception'
-import { TokenService } from '../token/token.service'
+import { generateHashedPassword, generateString } from 'src/util'
+import { Repository } from 'typeorm'
 import { Token } from '../token/token.entity'
+import { TokenService } from '../token/token.service'
+import { User } from './user.entity'
+import { IUser } from './user.interface'
 
 @Injectable()
 export class UserService {
@@ -13,7 +14,7 @@ export class UserService {
     @InjectRepository(User)
     private usersRepository: Repository<User>
   ) {}
-  async login(user: User, tokenService: TokenService) {
+  async login(user: IUser, tokenService: TokenService) {
     const find = await this.usersRepository.findOneBy({ name: user.name })
     if (!find) throw new CommonException('用户不存在')
     const password = generateHashedPassword(user.password, find.salt)
@@ -32,7 +33,7 @@ export class UserService {
     tokenService.save(token)
     return tokenString
   }
-  async register(user: User) {
+  async register(user: IUser) {
     const find = await this.usersRepository.findOneBy({ name: user.name })
     if (find) throw new CommonException('用户名已存在')
     const salt = generateString(16)
@@ -41,7 +42,7 @@ export class UserService {
     user.salt = salt
     return (await this.usersRepository.save(user)).id
   }
-  async changePassword(user: User & { newPassword: string }) {
+  async changePassword(user: IUser & { newPassword: string }) {
     const find = await this.usersRepository.findOneBy({ name: user.name })
     if (!find) throw new CommonException('用户不存在')
     const password = generateHashedPassword(user.password, find.salt)

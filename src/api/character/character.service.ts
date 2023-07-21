@@ -1,13 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { DataSource, Repository } from 'typeorm'
-import { Character } from './character.entity'
 import { Request } from 'express'
 import { CommonException } from 'src/exception'
+import { DataSource, Repository } from 'typeorm'
+import { Equipment } from '../equipment/equipment.entity'
 import { EquipmentService } from '../equipment/equipment.service'
 import { PetService } from '../pet/pet.service'
-import { Equipment } from '../equipment/equipment.entity'
-import { Pet } from '../pet/pet.entity'
+import { CreateCharacterDto, UpdateCharacterDto } from './character.dto'
+import { Character } from './character.entity'
 
 @Injectable()
 export class CharacterService {
@@ -35,7 +35,7 @@ export class CharacterService {
       id
     })
   }
-  async create(character: Character) {
+  async create(character: CreateCharacterDto): Promise<number> {
     const queryRunner = this.dataSource.createQueryRunner()
     await queryRunner.connect()
     await queryRunner.startTransaction()
@@ -59,7 +59,7 @@ export class CharacterService {
     return result.id
   }
 
-  async update(character: Character) {
+  async update(character: UpdateCharacterDto): Promise<number> {
     const queryRunner = this.dataSource.createQueryRunner()
     await queryRunner.connect()
     await queryRunner.startTransaction()

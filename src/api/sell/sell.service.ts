@@ -1,10 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { DataSource, Repository } from 'typeorm'
-import { Sell } from './sell.entity'
 import { Request } from 'express'
-import { BuyService } from '../buy/buy.service'
 import { CommonException } from 'src/exception'
+import { DataSource, Repository } from 'typeorm'
+import { BuyService } from '../buy/buy.service'
+import { Sell } from './sell.entity'
+import { ISell } from './sell.interface'
 
 @Injectable()
 export class SellService {
@@ -19,7 +20,7 @@ export class SellService {
   async findOne(id: number) {
     return this.sellRepository.findOneBy({ id })
   }
-  async create(sell: Sell) {
+  async create(sell: ISell) {
     const queryRunner = this.dataSource.createQueryRunner()
     await queryRunner.connect()
     await queryRunner.startTransaction()
@@ -49,7 +50,7 @@ export class SellService {
     return result?.id
   }
 
-  async update(sell: Sell) {
+  async update(sell: ISell) {
     const queryRunner = this.dataSource.createQueryRunner()
     await queryRunner.connect()
     await queryRunner.startTransaction()

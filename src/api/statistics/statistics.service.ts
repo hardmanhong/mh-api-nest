@@ -1,11 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common'
+import dayjs from 'dayjs'
+import { Request } from 'express'
 import { DataSource } from 'typeorm'
 import { Buy } from '../buy/buy.entity'
-import { TimeDimension } from './type'
-import { Request } from 'express'
-import dayjs from 'dayjs'
 import { Sell } from '../sell/sell.entity'
-import { Goods } from '../goods/goods.entity'
+import { TimeDimension } from './statistics.interface'
 
 @Injectable()
 export class StatisticsService {

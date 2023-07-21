@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm'
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm'
 import { Buy } from '../buy/buy.entity'
 import { Sell } from '../sell/sell.entity'
 
@@ -11,10 +11,10 @@ export class Goods {
   name: string
 
   @Column({ name: 'min_price' })
-  minPrice: string
+  minPrice: number
 
   @Column({ name: 'max_price' })
-  maxPrice: string
+  maxPrice: number
 
   // 定义一个 buys 属性，表示 goods 和 buy 的一对多关系
   @OneToMany(() => Buy, (buy) => buy.goods)

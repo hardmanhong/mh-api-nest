@@ -9,8 +9,10 @@ import {
   Put,
   Query
 } from '@nestjs/common'
+import { ApiExcludeController } from '@nestjs/swagger'
 import { EquipmentService } from './equipment.service'
 
+@ApiExcludeController()
 @Controller('equipment')
 export class EquipmentController {
   constructor(private equipmentService: EquipmentService) {}

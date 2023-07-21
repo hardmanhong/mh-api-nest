@@ -1,9 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
-import { Account } from './account.entity'
 import { Request } from 'express'
 import { CommonException } from 'src/exception'
+import { Repository } from 'typeorm'
+import { Account } from './account.entity'
+import { IAccount } from './account.interface'
 
 @Injectable()
 export class AccountService {
@@ -19,7 +20,7 @@ export class AccountService {
     return this.accountRepository.findOneBy({ id })
   }
 
-  async create(account: Account) {
+  async create(account: IAccount) {
     account.userId = this.req.app.get('userId')
     const result = await this.accountRepository.findOneBy({
       name: account.name
@@ -28,7 +29,7 @@ export class AccountService {
     return (await this.accountRepository.save(account)).id
   }
 
-  async update(account: Account) {
+  async update(account: IAccount) {
     account.userId = this.req.app.get('userId')
     const result = await this.findOne(account.id)
     if (!result) throw new CommonException('记录不存在')

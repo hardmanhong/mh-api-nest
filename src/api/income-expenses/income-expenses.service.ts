@@ -2,8 +2,9 @@ import { Inject, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Request } from 'express'
 import { In, Repository } from 'typeorm'
+import { FindAllQueryDto } from './income-expenses.dto'
 import { IncomeExpenses } from './income-expenses.entity'
-import { IQuery } from './type'
+import { IIncomeExpenses } from './income-expenses.interface'
 
 @Injectable()
 export class IncomeExpensesService {
@@ -15,10 +16,10 @@ export class IncomeExpensesService {
   async findAll(
     page: number,
     pageSize: number,
-    { type, category = [] }: IQuery
+    { type, category = [] }: FindAllQueryDto
   ) {
     const userId = this.req.app.get('userId')
-    const [list, count] = await this.incomeExpensesRepository.findAndCount({
+    const [list, total] = await this.incomeExpensesRepository.findAndCount({
       skip: (page - 1) * pageSize,
       take: pageSize,
       where: {
@@ -37,7 +38,7 @@ export class IncomeExpensesService {
 
     return {
       list,
-      count,
+      total,
       income,
       expenses,
       surplus
@@ -47,12 +48,12 @@ export class IncomeExpensesService {
     return this.incomeExpensesRepository.findOneBy({ id })
   }
 
-  async create(incomeExpenses: IncomeExpenses) {
+  async create(incomeExpenses: IIncomeExpenses) {
     incomeExpenses.userId = this.req.app.get('userId')
     return this.incomeExpensesRepository.save(incomeExpenses)
   }
 
-  async update(incomeExpenses: IncomeExpenses) {
+  async update(incomeExpenses: IIncomeExpenses) {
     return this.incomeExpensesRepository.save(incomeExpenses)
   }
 

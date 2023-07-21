@@ -1,13 +1,13 @@
-import {
-  Entity,
-  Column,
-  PrimaryGeneratedColumn,
-  CreateDateColumn,
-  UpdateDateColumn,
-  ManyToOne,
-  JoinColumn
-} from 'typeorm'
 import { Exclude } from 'class-transformer'
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn
+} from 'typeorm'
 import { Character } from '../character/character.entity'
 
 @Entity()
@@ -23,10 +23,10 @@ export class Pet {
   name: string
 
   @Column()
-  price: string
+  price: number
 
   @Column()
-  level: string
+  level: number
 
   @Column()
   remark: string
@@ -37,9 +37,9 @@ export class Pet {
 
   @Column({ type: 'timestamp', name: 'created_at' })
   @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date
+  createdAt: string
 
   @Column({ type: 'timestamp', name: 'updated_at' })
   @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date
+  updatedAt: string
 }

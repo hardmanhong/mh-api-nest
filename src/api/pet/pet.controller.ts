@@ -9,8 +9,11 @@ import {
   Put,
   Query
 } from '@nestjs/common'
+import { ApiExcludeController } from '@nestjs/swagger'
+import { CreatePetDto, UpdatePetDto } from './pet.dto'
 import { PetService } from './pet.service'
 
+@ApiExcludeController()
 @Controller('pet')
 export class PetController {
   constructor(private petService: PetService) {}
@@ -25,12 +28,12 @@ export class PetController {
   }
 
   @Post()
-  create(@Body() pet: any) {
+  create(@Body() pet: CreatePetDto) {
     return this.petService.create(pet)
   }
 
   @Put(':id')
-  update(@Param('id', ParseIntPipe) id: number, @Body() pet: any) {
+  update(@Param('id', ParseIntPipe) id: number, @Body() pet: UpdatePetDto) {
     pet.id = id
     return this.petService.update(pet)
   }

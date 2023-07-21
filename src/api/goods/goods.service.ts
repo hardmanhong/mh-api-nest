@@ -1,20 +1,18 @@
-import { Inject, Injectable } from '@nestjs/common'
+import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Like, Repository } from 'typeorm'
+import { FindAllGoodsDto } from './goods.dto'
 import { Goods } from './goods.entity'
-import { Request } from 'express'
+import { IGoods } from './goods.interface'
 
 @Injectable()
 export class GoodsService {
   constructor(
     @InjectRepository(Goods)
-    private goodsRepository: Repository<Goods>,
-    @Inject('REQUEST') private readonly req: Request
+    private goodsRepository: Repository<Goods>
   ) {}
-  async findAll(page: number, pageSize: number, query: any) {
-    const userId = this.req.app.get('userId')
-    console.log('goods findAll', userId)
-    const [list, count] = await this.goodsRepository.findAndCount({
+  async findAll(page: number, pageSize: number, query: FindAllGoodsDto) {
+    const [list, total] = await this.goodsRepository.findAndCount({
       skip: (page - 1) * pageSize,
       take: pageSize,
       where: {
@@ -23,20 +21,19 @@ export class GoodsService {
     })
     return {
       list,
-      count
+      total
     }
   }
   async findOne(id: number) {
     return this.goodsRepository.findOneBy({ id })
   }
 
-  async create(goods: Goods) {
-    return this.goodsRepository.save(goods)
+  async create(goods: IGoods) {
+    return (await this.goodsRepository.save(goods)).id
   }
 
-  async update(goods: Goods) {
-    console.log('update', goods)
-    return this.goodsRepository.save(goods)
+  async update(goods: IGoods) {
+    return (await this.goodsRepository.save(goods)).id
   }
 
   async remove(id: number) {

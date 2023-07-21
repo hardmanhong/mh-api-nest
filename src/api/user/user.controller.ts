@@ -1,8 +1,11 @@
 import { Body, Controller, HttpCode, Post } from '@nestjs/common'
-import { UserService } from './user.service'
-import { User } from './user.entity'
+import { ApiOperation, ApiTags } from '@nestjs/swagger'
+import { ApiDataResponse, ApiNullResponse } from 'src/decorators'
 import { TokenService } from '../token/token.service'
+import { ChangePasswordUserDto, UserDto } from './user.dto'
+import { UserService } from './user.service'
 
+@ApiTags('user')
 @Controller('user')
 export class UserController {
   constructor(
@@ -11,18 +14,26 @@ export class UserController {
   ) {}
   @Post('login')
   @HttpCode(200)
-  login(@Body() user: User) {
+  @ApiOperation({ summary: '登录' })
+  @ApiDataResponse('string')
+  login(@Body() user: UserDto) {
     return this.userService.login(user, this.tokenService)
   }
 
   @Post('register')
   @HttpCode(200)
-  register(@Body() user: User) {
-    return this.userService.register(user)
+  @ApiOperation({ summary: '注册' })
+  @ApiNullResponse()
+  register(@Body() user: UserDto) {
+    this.userService.register(user)
+    return null
   }
 
   @Post('changePassword')
-  changePassword(@Body() user: User & { newPassword: string }) {
-    return this.userService.changePassword(user)
+  @ApiOperation({ summary: '修改密码' })
+  @ApiNullResponse()
+  changePassword(@Body() user: ChangePasswordUserDto) {
+    this.userService.changePassword(user)
+    return null
   }
 }

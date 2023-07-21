@@ -1,10 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Between, In, Repository } from 'typeorm'
-import { Buy } from './buy.entity'
 import { Request } from 'express'
-import { IQuery } from './type'
 import { CommonException } from 'src/exception'
+import { Between, In, Repository } from 'typeorm'
+import { FindAllBuyDto } from './buy.dto'
+import { Buy } from './buy.entity'
+import { IBuy } from './buy.interface'
 
 @Injectable()
 export class BuyService {
@@ -16,16 +17,17 @@ export class BuyService {
   async findAll(
     page: number,
     pageSize: number,
-    { goodsIds = [], startAt = null, endAt = null, order }: IQuery
+    { goodsIds = [], startAt = null, endAt = null, order }: FindAllBuyDto
   ) {
     const userId = this.req.app.get('userId')
-    const [list, count] = await this.buyRepository.findAndCount({
+    const [list, total] = await this.buyRepository.findAndCount({
       skip: (page - 1) * pageSize,
       take: pageSize,
       where: {
         userId,
         ...(goodsIds.length && { goodsId: In(goodsIds) }),
-        ...(startAt && endAt && { createdAt: Between(startAt, endAt) })
+        ...(startAt &&
+          endAt && { createdAt: Between(new Date(startAt), new Date(endAt)) })
       },
       order: {
         ...order,
@@ -57,7 +59,7 @@ export class BuyService {
 
     return {
       list,
-      count,
+      total,
       totalAmount,
       totalProfit,
       totalInventory
@@ -67,13 +69,13 @@ export class BuyService {
     return this.buyRepository.findOneBy({ id })
   }
 
-  async create(buy: Buy) {
+  async create(buy: IBuy) {
     buy.userId = this.req.app.get('userId')
     buy.inventory = buy.quantity
     return (await this.buyRepository.save(buy)).id
   }
 
-  async update(buy: Buy) {
+  async update(buy: IBuy) {
     buy.userId = this.req.app.get('userId')
     const result = await this.findOne(buy.id)
     if (!result) throw new CommonException('记录不存在')

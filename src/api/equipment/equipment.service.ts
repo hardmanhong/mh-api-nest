@@ -1,9 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
-import { Equipment } from './equipment.entity'
 import { Request } from 'express'
 import { CommonException } from 'src/exception'
+import { Repository } from 'typeorm'
+import { EquipmentDto } from './equipment.dto'
+import { Equipment } from './equipment.entity'
 
 @Injectable()
 export class EquipmentService {
@@ -19,15 +20,19 @@ export class EquipmentService {
     return this.equipmentRepository.findOneBy({ id })
   }
 
-  createEntity(equipment: Equipment) {
-    return this.equipmentRepository.create(equipment)
+  createEntity(equipment: EquipmentDto): EquipmentDto {
+    const createdEntity = this.equipmentRepository.create(equipment)
+    const createdDto: EquipmentDto = {
+      ...createdEntity
+    }
+    return createdDto
   }
 
-  async create(equipment: Equipment) {
+  async create(equipment: EquipmentDto) {
     return (await this.equipmentRepository.save(equipment)).id
   }
 
-  async update(equipment: Equipment) {
+  async update(equipment: EquipmentDto) {
     const result = await this.findOne(equipment.id)
     if (!result) throw new CommonException('记录不存在')
     return (await this.equipmentRepository.save(equipment)).id
