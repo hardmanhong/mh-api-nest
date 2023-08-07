@@ -23,13 +23,21 @@ export class Sell {
   @Column({ name: 'goods_id' })
   goodsId: number
 
-  @Column()
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2
+  })
   price: number
 
   @Column()
   quantity: number
 
-  @Column()
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2
+  })
   profit: number
 
   @Column()
