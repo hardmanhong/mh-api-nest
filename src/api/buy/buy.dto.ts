@@ -20,7 +20,6 @@ export class BuyDto {
   goodsId: number
 
   @IsNotEmpty()
-  @IsNumber()
   @ApiProperty({
     description: '买入价'
   })
