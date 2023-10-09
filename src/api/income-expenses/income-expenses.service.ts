@@ -26,6 +26,9 @@ export class IncomeExpensesService {
         userId,
         ...(type && { type }),
         ...(category.length && { category: In(category) })
+      },
+      order: {
+        date: 'DESC'
       }
     })
     const income = await this.incomeExpensesRepository.sum('amount', [
